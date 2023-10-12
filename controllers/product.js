@@ -91,11 +91,32 @@ const sortProduct = async ( req , res ) => {
     
 }
 
+const search = async (req , res ) => {
+    const apiData = await fetch('https://dummyjson.com/products');
+    const search = req.query.search.toLowerCase();
 
+    if (!apiData.ok) {
+        throw new error ("The api we are using is currently useless")
+    }
+
+    const data = await apiData.json();
+    const products = data.products
+
+    const searchedProduct = products.filter((product) => product.title.toLowerCase().includes(search))
+
+    if(searchedProduct.length > 0){
+        res.status(StatusCodes.OK).json(searchedProduct)
+    } else {
+        res.status(StatusCodes.BAD_REQUEST).json("No product found")
+    }
+
+    
+}
 
 module.exports = {
     getAllProducts,
     getProduct,
     getCategories,
     sortProduct ,
+    search
 }
