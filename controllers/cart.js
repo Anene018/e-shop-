@@ -1,4 +1,4 @@
-const User = require('../models/User');
+const Wallet = require('../models/wallet');
 const Cart = require('../models/cart');
 const StatusCodes = require('http-status-codes')
 const {BadRequestError , UnauthenticatedError , CustomAPIError} = require('../errors');
@@ -59,54 +59,16 @@ const getCart = async ( req , res ) => {
 const removeItem = async ( req , res ) => {
     const userId = req.user.userId
     const id = req.params.id;
+
+    if(id){
+        const remove = await Cart.deleteOne({ id , userId})
+        res.status(StatusCodes.OK).json("Item has been removed from chart")
+    } else {
+        const cart = await Cart.deleteMany({ userId })
+        res.status(StatusCodes.OK).json(" All items in cart has been cleared ")
+    }
    
-
-    const remove = await Cart.deleteOne({ id , userId})
-    res.status(StatusCodes.OK).json("Item has been removed from chart")
-
-}
-
-const removeAll = async ( req , res ) => {
-
-    const userId = req.user.userId;
-
-    const cart = await Cart.deleteMany({ userId })
-
-    res.status(StatusCodes.OK).json(" All items in cart has been cleared ")
-}
-
-const decreaseItem = async ( req ,res ) => {
-    const userId = req.user.userId;
-    const id = req.params.id;
-    const quantity = req.body.quantity;
-
-    if( quantity >= 10){
-        return res.status(StatusCodes.BAD_REQUEST).json("Cannot order more than 10 items")
-    }
-
-    if (quantity <= 0 ) {
-        const item = await Cart.findOneAndDelete({userId , id})
-        return res.status(StatusCodes.OK).json("Item has been removed")
-    }
-
-    const item = await Cart.findOne({ id , userId })
-
-    if(!item){
-        return res.status(StatusCodes.BAD_REQUEST).json("Item does not exist")
-    }
-
-    try {
-        item.quantity = quantity;
-        await item.save(); 
-        res.json(item)
-    } catch (error) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-            error: error.message
-        })
-    }
-
-    
-}
+}   
 
 const increaseItem = async ( req ,res ) => {
     const userId = req.user.userId;
@@ -139,11 +101,56 @@ const increaseItem = async ( req ,res ) => {
     }
 
 }
+
+
+const checkOutItem = async ( req , res ) => {
+    const userId = req.user.userId
+    const id = req.body.id
+    let cart = []
+    if(id){
+        const cartItem = await Cart.findOne({id})
+        if(!cartItem){
+            throw new Error ("Item is not in your cart")
+        }
+        if (cartItem){
+            cart = [cartItem]
+        }
+
+    } else {
+        cart = await Cart.find({userId})
+    }
+
+    const wallet = await Wallet.findOne({userId})
+    const walletBalance = wallet.walletBalance
+    if(!wallet){
+        throw new Error ("User does not have wallet")
+    }
+
+    const totalPrice = cart.reduce((total , product) => total + product.price * product.quantity , 0);
+
+    if(walletBalance < totalPrice){
+        throw new Error ("Insufficient funds")
+    }
+
+    const newWalletBalance = walletBalance - totalPrice
+    wallet.walletBalance = newWalletBalance
+    await wallet.save()
+
+    if(id){
+        await Cart.deleteOne({id})
+    } else {
+        await Cart.deleteMany({userId})
+    }
+
+    res.status(StatusCodes.OK).json({
+        message : "Purchase successfull",
+    })
+}
+
 module.exports = {
     addCart,
     getCart,
-    removeAll,
     removeItem,
-    decreaseItem,
     increaseItem,
+    checkOutItem
 }
