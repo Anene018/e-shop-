@@ -3,6 +3,7 @@ const Cart = require('../models/cart');
 const StatusCodes = require('http-status-codes')
 const {BadRequestError , UnauthenticatedError , CustomAPIError} = require('../errors');
 const fetch = require('node-fetch');
+const ProductTracker = require('../models/expenseTracker')
 
 
 const addCart =  async (req , res ) => {
@@ -104,47 +105,68 @@ const increaseItem = async ( req ,res ) => {
 
 
 const checkOutItem = async ( req , res ) => {
-    const userId = req.user.userId
-    const id = req.body.id
-    let cart = []
-    if(id){
-        const cartItem = await Cart.findOne({id})
-        if(!cartItem){
-            throw new Error ("Item is not in your cart")
+    try {
+        const userId = req.user.userId
+        const id = req.body.id
+        
+        let cartItems = [] 
+        if(id){
+            const cartItem = await Cart.findOne({id})
+            if(!cartItem){
+                throw new Error ("Item is not in your cart")
+            }
+            if (cartItem){
+                cartItems = [cartItem]
+            }
+
+        } else {
+            cartItems = await Cart.find({userId})
         }
-        if (cartItem){
-            cart = [cartItem]
+
+        const wallet = await Wallet.findOne({userId})
+        const walletBalance = wallet.walletBalance
+        if(!wallet){
+            throw new Error ("User does not have wallet")
         }
 
-    } else {
-        cart = await Cart.find({userId})
-    }
+        const totalPrice = cartItems.reduce((total , product) => total + product.price * product.quantity , 0);
 
-    const wallet = await Wallet.findOne({userId})
-    const walletBalance = wallet.walletBalance
-    if(!wallet){
-        throw new Error ("User does not have wallet")
-    }
+        if(walletBalance < totalPrice){
+            throw new Error ("Insufficient funds")
+        }
 
-    const totalPrice = cart.reduce((total , product) => total + product.price * product.quantity , 0);
+        const newWalletBalance = walletBalance - totalPrice
+        wallet.walletBalance = newWalletBalance
+        await wallet.save()
 
-    if(walletBalance < totalPrice){
-        throw new Error ("Insufficient funds")
-    }
+        if(id){
+            await Cart.deleteOne({id})
+        } else {
+            await Cart.deleteMany({userId})
+        }
 
-    const newWalletBalance = walletBalance - totalPrice
-    wallet.walletBalance = newWalletBalance
-    await wallet.save()
+        const expenseTrackers = cartItems.map((cartItem) =>{
+            return new ProductTracker({
+                product: cartItem.title,
+                price : cartItem.price,
+                quantity : cartItem.quantity,
+                date : new Date(),
+                userId
+            });
+        })
 
-    if(id){
-        await Cart.deleteOne({id})
-    } else {
-        await Cart.deleteMany({userId})
-    }
+        await ProductTracker.insertMany(expenseTrackers)
 
-    res.status(StatusCodes.OK).json({
-        message : "Purchase successfull",
-    })
+        res.status(StatusCodes.OK).json({
+            message : "Purchase successfull",
+        })
+
+    } catch (error) {
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message : "Error in purchasing product",
+            error : error.message
+        })
+    }    
 }
 
 module.exports = {
