@@ -21,29 +21,16 @@ const userSchema = new mongoose.Schema ({
         type : String,
         required : [true , "Please put in password"] ,
         minlength : 8,
-        select : false
     },
-
-    cart : {
-        type : mongoose.ObjectId,
-        ref :"Cart"
+    cart: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Cart', 
     },
-    walletDetails : {
-        type : mongoose.ObjectId,
-        ref :"Wallet"
+    walletDetails: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Wallet',  
     },
-    // confirmpassword : {
-    //     type : String ,
-    //     required : [true , "Please put in password"],
-    //     minlength : 8,
-    //     validate :{
-    //         validator : function(value) {
-    //            return value == this.password
-    //         },
-    //         message :" Password does not match"
-    //     }
-        
-    // },
+    
     
     passwordResetToken : String ,
     passwordResetTokenExpires : Date
@@ -54,23 +41,19 @@ const userSchema = new mongoose.Schema ({
 
 userSchema.pre('save' , async function (next) {
     if(!this.isModified('password')) return next();
-
     this.password = await bcrypt.hash(this.password , 10);
-
     next();
 })
 
-// userSchema.methods.comparePassword = async function (pass , passdb) {
-//     return await bcrypt.compare(pass , passdb)
-// }
+userSchema.methods.comparePassword = async function (canditatePassword) {
+    const isMatch = await bcrypt.compare(canditatePassword, this.password);
+    return isMatch;
+};
 
 userSchema.methods.isPasswordChanged = async function (jwtTimeStamp){
     if(this.passwordChangedAt){
-
         const passwordChangedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000 , 10);
-       
         return   jwtTimeStamp < passwordChangedTimestamp
-
     }
     return false
 }

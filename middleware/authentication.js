@@ -15,7 +15,7 @@ const auth = async (req, res, next) => {
     throw new UnauthenticatedError('Please login')
   }
   const decoded = await util.promisify( jwt.verify)(token , process.env.SECRET_STR)
- 
+  
   // validating user
   const user = await User.findById(decoded.id);
 

@@ -52,10 +52,12 @@ const getWallet = async (req , res) => {
 
 const fundWallet = async (req , res) => {
 
-    const walletId = { userId : req.user.userId }
+    const userId = { userId : req.user.userId }
+    const wallet = await Wallet.findOne({userId})
     const funds ={ walletBalance : req.body.walletBalance }
+    const newBalance = funds + wallet.walletBalance
 
-    const wallet = await Wallet.findOneAndUpdate(walletId , funds , {
+    const Fundedwallet = await Wallet.findOneAndUpdate(userId , newBalance , {
         new : true 
     })
 

@@ -131,6 +131,7 @@ const checkOutItem = async ( req , res ) => {
 
         const totalPrice = cartItems.reduce((total , product) => total + product.price * product.quantity , 0);
 
+        console.log(totalPrice);
         if(walletBalance < totalPrice){
             throw new Error ("Insufficient funds")
         }
@@ -151,7 +152,8 @@ const checkOutItem = async ( req , res ) => {
                 price : cartItem.price,
                 quantity : cartItem.quantity,
                 date : new Date(),
-                userId
+                userId,
+                id
             });
         })
 
@@ -169,10 +171,29 @@ const checkOutItem = async ( req , res ) => {
     }    
 }
 
+const history = async (req, res) => {
+    const userId = req.user.userId
+    let products = []
+
+    if(products){
+        products = await ProductTracker.find({userId})
+        if(!products){
+            throw new Error("User does not have any successful purchase")
+        }
+    }
+
+    const totalPrice = products.reduce((total , product) => total + product.price * product.quantity , 0)
+    res.status(StatusCodes.OK).json({
+        expenses : products,
+        total : totalPrice
+    })
+}
+
 module.exports = {
     addCart,
     getCart,
     removeItem,
     increaseItem,
-    checkOutItem
+    checkOutItem,
+    history
 }
