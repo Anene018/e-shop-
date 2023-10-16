@@ -1,11 +1,12 @@
 const express = require('express')
 const router = express.Router()
-const {getUser , addPhoto} = require('../controllers/user')
+const {getUser } = require('../controllers/user')
 const auth = require('../middleware/authentication')
+const {uploadFile , uploadImage} = require('../controllers/upload')
 
-router.route('/getuser').get(getUser,auth)
-router.route('/addphoto').patch(auth , addPhoto)
-//router.route('/createwallet').post(createWallet,auth)
+
+router.route('/getuser').get(auth , getUser)
+router.route('/addphoto').post(auth , uploadImage , uploadFile )
 
 
 module.exports = router

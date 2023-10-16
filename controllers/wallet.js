@@ -52,21 +52,19 @@ const getWallet = async (req , res) => {
 
 const fundWallet = async (req , res) => {
 
-    const userId = { userId : req.user.userId }
-    const wallet = await Wallet.findOne({userId})
-    const funds ={ walletBalance : req.body.walletBalance }
-    const newBalance = funds + wallet.walletBalance
-
-    const Fundedwallet = await Wallet.findOneAndUpdate(userId , newBalance , {
-        new : true 
-    })
-
+    const userId = req.user.userId
+    const wallet = await Wallet.findOne({ userId })
     if (!wallet) {
         throw new CustomAPIError("User does not have wallet")
     }
+    const funds = req.body.walletBalance 
+    const newBalance = funds + wallet.walletBalance
+    wallet.walletBalance = newBalance
+    await wallet.save();
 
-
-    console.log(wallet);
-    res.status(StatusCodes.OK).json("Wallet has been funded")
+    console.log(newBalance);
+    res.status(StatusCodes.OK).json({
+        message : "Wallet has been funded"
+    })
 }
 module.exports = {createWallet , getWallet ,fundWallet}

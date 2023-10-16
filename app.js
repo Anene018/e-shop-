@@ -1,13 +1,13 @@
 require('dotenv').config();
 require('express-async-errors');
-// var admin = require("firebase-admin");
+var admin = require("firebase-admin");
 
-// var serviceAccount = require("./e-shop-9c1d5-firebase-adminsdk-wroot-f1497ab3dd.json");
+var serviceAccount = require("./e-shop-9c1d5-firebase-adminsdk-wroot-f1497ab3dd.json");
 
-// admin.initializeApp({
-//   credential: admin.credential.cert(serviceAccount),
-//   storageBucket : 'gs://e-shop-9c1d5.appspot.com'
-// });
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  storageBucket : "gs://e-shop-9c1d5.appspot.com"
+});
 
 
 const express = require('express');

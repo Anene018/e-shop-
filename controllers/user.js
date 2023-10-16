@@ -3,9 +3,9 @@ const User = require('../models/User')
 const {BadRequestError , UnauthenticatedError , CustomAPIError} = require('../errors')
 //const picture = require('../ProfilePhoto')
 
-const getUser = async (req , res , next ) => {
-    const name = req.user
-    const user = await User.findOne(name)
+const getUser = async (req , res  ) => {
+    const userId = req.user.userId
+    const user = await User.findById({_id :userId})
 
     if(!user){
         throw new CustomAPIError("No user with name")
@@ -24,8 +24,6 @@ const addPhoto = async (req , res) => {
     if(!user){
         throw new UnauthenticatedError("No user with name")
     }
-
-
 
     res.send('You ugly')
 }
