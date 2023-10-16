@@ -6,7 +6,7 @@ var serviceAccount = require("./e-shop-9c1d5-firebase-adminsdk-wroot-f1497ab3dd.
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  storageBucket : "gs://e-shop-9c1d5.appspot.com"
+  storageBucket : process.env.STORAGE_BUCKET
 });
 
 
