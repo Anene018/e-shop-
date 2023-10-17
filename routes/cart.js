@@ -12,7 +12,4 @@ router.route('/checkout').get(  auth , checkOutItem )
 router.route('/history').get(  auth , history )
 
 
-
-
-
 module.exports = router

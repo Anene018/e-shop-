@@ -23,11 +23,6 @@ const auth = async (req, res, next) => {
     throw new UnauthenticatedError("User does not exist")
   }
 
-  const isPasswordChanged = await user.isPasswordChanged(decoded.iat)
-  if(isPasswordChanged){
-    throw new UnauthenticatedError(" Wrong password ")
-  }
-
   req.user = {
     userId : decoded.id
   }

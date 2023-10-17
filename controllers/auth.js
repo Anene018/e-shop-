@@ -3,9 +3,10 @@ const { StatusCodes } = require('http-status-codes');
 const {BadRequestError , UnauthenticatedError , CustomAPIError} = require('../errors')
 const jwt = require('jsonwebtoken')
 const sendEmail = require('../services/email')
-const crypto = require('crypto');
 const { generateKey } = require('../services/otp');
 const bcrypt = require('bcryptjs')
+const speakeasy = require('speakeasy')
+
 
 const signToken = (id , name ) => {
     return jwt.sign({ id , name } , process.env.SECRET_STR , {
@@ -56,14 +57,14 @@ const forgotPassword = async (req , res ) => {
         throw new UnauthenticatedError(" No user with given email")
     }
 
-    const resetToken = await user.createResetPasswordToken();
-    await user.save({ validateBeforeSave : false });
+    // const resetToken = await user.createResetPasswordToken();
+    // await user.save({ validateBeforeSave : false });
 
-    const resetUrl = `${req.protocol}://${req.get('host')}/api/auth/reset-password/${resetToken}`
-    const message = ` Use the link below to reset your password. If you did not request please ignore the email \n \n ${resetUrl} \n \n link is valid for 10 minutes`;
+    // const resetUrl = `${req.protocol}://${req.get('host')}/api/auth/reset-password/:${resetToken}`
+    // const message = ` Use the link below to reset your password. If you did not request please ignore the email \n \n ${resetUrl} \n \n link is valid for 10 minutes`;
 
-    //const verificationInfo =  (await generateKey());
-    //const message = `Your verification OTP for e-shop is ${verificationInfo.otp} and ${verificationInfo.secret}`
+    const verificationInfo =  (await generateKey());
+    const message = `Your verification OTP for e-shop is \n \n ${verificationInfo.otp}  \n \n  it last for % minutes`
     
     try {
         await sendEmail({
@@ -73,7 +74,7 @@ const forgotPassword = async (req , res ) => {
         });
 
         res.status(StatusCodes.OK).json({
-            message : ' Reset link has been sent to your email'
+            message : ' OTP sent to your email'
         })
     } catch (error) {
         user.passwordResetToken = undefined,
@@ -82,22 +83,27 @@ const forgotPassword = async (req , res ) => {
 
         throw new CustomAPIError('Email not sent')
     }
-    
-
 }
-
 const resetPassword = async (req , res ) => {
-    const token = crypto.createHash('sha256').update(req.params.token).digest('hex')
-    const user = await User.findOne({passwordResetToken : token , passwordResetTokenExpires : { $gt : Date.now() }})
+    const { otp , password , email } = req.body
+    const user = await User.findOne(email)
     if(!user){
-        throw new UnauthenticatedError('Token is invalid or Expired')
+        throw new BadRequestError('No user with email')
     }
 
-    user.password = await bcrypt.hash(req.body.password , 10) ;
+    const secret = 3;
+    const isVerified  = speakeasy.totp.verify({
+        secret: secret,
+        encoding: 'base32',
+        token: otp,
+        window: 6
+      });
 
-    user.passwordResetToken = undefined;
-    user.passwordResetTokenExpires = undefined;
-    user.passwordChangedAt = Date.now;
+      if(!isVerified){
+        throw new UnauthenticatedError ("Invalid otp")
+      }
+    
+    user.password = await bcrypt.hash( password , 10) ;
 
     await user.save();
 
@@ -110,6 +116,7 @@ const resetPassword = async (req , res ) => {
         }
     })
 }
+
 
 const getUser = async (req , res  ) => {
     const name = req.body
@@ -125,6 +132,7 @@ const getUser = async (req , res  ) => {
         }
     })
 }
+
 
 module.exports = {
     signup,

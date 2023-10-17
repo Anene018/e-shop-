@@ -2,8 +2,6 @@ const mongoose = require('mongoose')
 const bcrypt = require('bcryptjs')
 const validator = require('validator')
 const crypto = require('crypto')
-const { jwt } = require('jsonwebtoken')
-
 
 const userSchema = new mongoose.Schema ({
     name : {
@@ -50,14 +48,6 @@ userSchema.methods.comparePassword = async function (canditatePassword) {
     return isMatch;
 };
 
-userSchema.methods.isPasswordChanged = async function (jwtTimeStamp){
-    if(this.passwordChangedAt){
-        const passwordChangedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000 , 10);
-        return   jwtTimeStamp < passwordChangedTimestamp
-    }
-    return false
-}
-
 userSchema.methods.createResetPasswordToken = async function () {
 
    const resetToken = crypto.randomBytes( 32 ).toString('hex')
@@ -70,4 +60,3 @@ userSchema.methods.createResetPasswordToken = async function () {
 }
 
 module.exports= mongoose.model("User" , userSchema)
-

@@ -16,7 +16,7 @@ const sendEmail =async  (option) => {
         text : option.text
     }
 
-    transporter.sendMail(emailOption)
+    await transporter.sendMail(emailOption)
 }
 
 module.exports = sendEmail
