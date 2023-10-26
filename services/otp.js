@@ -1,5 +1,5 @@
 var speakeasy = require('speakeasy')
-
+ 
 const generateOtp =  (otpSecret) =>{
     // Generate a time-based token based on the base-32 key.
     // HOTP (counter-based tokens) can also be used if `totp` is replaced by
@@ -21,7 +21,6 @@ const generateKey =  async( ) => {
     return {otp , secret}; 
 }
 
-
 module.exports = {
-    generateKey
+    generateKey,
 }
